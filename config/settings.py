@@ -7,15 +7,24 @@ from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# --------------------------------------------------
+# BASIC SETTINGS
+# --------------------------------------------------
+
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-# Render production settings
-RENDER = bool(os.environ.get("RENDER"))
+# Detect Render environment
+IS_RENDER = bool(os.environ.get("RENDER"))
 RENDER_HOST = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 
-if RENDER:
+# Never enable DEBUG in production
+if IS_RENDER:
     DEBUG = False
+
+# --------------------------------------------------
+# ALLOWED HOSTS
+# --------------------------------------------------
 
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
@@ -23,11 +32,17 @@ ALLOWED_HOSTS = config(
     cast=Csv(),
 )
 
-if RENDER_HOST:
-    if RENDER_HOST not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(RENDER_HOST)
+if RENDER_HOST and RENDER_HOST not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_HOST)
 
-    CSRF_TRUSTED_ORIGINS = [f"https://{RENDER_HOST}"]
+CSRF_TRUSTED_ORIGINS = []
+
+if RENDER_HOST:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOST}")
+
+# --------------------------------------------------
+# APPLICATIONS
+# --------------------------------------------------
 
 INSTALLED_APPS = [
     "jazzmin",
@@ -39,6 +54,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "core",
 ]
+
+# --------------------------------------------------
+# MIDDLEWARE
+# --------------------------------------------------
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -52,6 +71,10 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "config.urls"
+
+# --------------------------------------------------
+# TEMPLATES
+# --------------------------------------------------
 
 TEMPLATES = [
     {
@@ -70,41 +93,65 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Database configuration
+# --------------------------------------------------
+# DATABASE
+# Render: use DATABASE_URL
+# Local: use DB_NAME, DB_USER, DB_PASSWORD, etc.
+# --------------------------------------------------
+
 DATABASE_URL = config("DATABASE_URL", default="").strip()
 
-if DATABASE_URL:
+if IS_RENDER:
+    if not DATABASE_URL:
+        raise RuntimeError(
+            "DATABASE_URL is missing. Add the Internal Database URL "
+            "to your Render web service Environment Variables."
+        )
+
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=600,
-            ssl_require=RENDER,
+            ssl_require=True,
         )
     }
-elif RENDER:
-    raise RuntimeError(
-        "DATABASE_URL is missing. Add your PostgreSQL connection URL "
-        "in the Render Environment settings."
-    )
+
+elif DATABASE_URL:
+    # Optional: connect to a database using DATABASE_URL locally
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+        )
+    }
+
 else:
-    # Local development database
+    # Local PostgreSQL database
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": config("DB_NAME", default=""),
-            "USER": config("DB_USER", default=""),
+            "NAME": config("DB_NAME", default="erique_db"),
+            "USER": config("DB_USER", default="erique_db_user"),
             "PASSWORD": config("DB_PASSWORD", default=""),
             "HOST": config("DB_HOST", default="localhost"),
             "PORT": config("DB_PORT", default="5432"),
+            "CONN_MAX_AGE": 60,
         }
     }
+
+# --------------------------------------------------
+# LANGUAGE AND TIME
+# --------------------------------------------------
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Africa/Dar_es_Salaam"
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# --------------------------------------------------
+# STATIC FILES
+# --------------------------------------------------
+
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -114,26 +161,41 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
     },
 }
 
-# Media files
+# --------------------------------------------------
+# MEDIA FILES
+# --------------------------------------------------
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Security settings for production
+# --------------------------------------------------
+# PRODUCTION SECURITY
+# --------------------------------------------------
+
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 31536000
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# Jazzmin admin theme
+    if IS_RENDER:
+        SECURE_HSTS_SECONDS = 31536000
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        SECURE_HSTS_PRELOAD = True
+
+# --------------------------------------------------
+# JAZZMIN ADMIN THEME
+# --------------------------------------------------
+
 JAZZMIN_SETTINGS = {
     "site_title": "Erique Portfolio Administration",
     "site_header": "Erique Developer Portfolio",
@@ -168,8 +230,10 @@ JAZZMIN_UI_TWEAKS = {
     "dark_mode_theme": "darkly",
 }
 
+# --------------------------------------------------
+# LOGGING
+# --------------------------------------------------
 
-# Log Django errors to Render logs
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
