@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+<section id="home" class="py-5 hero">
+ <div class="container"><div class="row align-items-center g-4">
+  <div class="col-lg-6">
+   <span class="badge-pill"><i class="bi bi-code-slash"></i> {{ s.title }}</span><span class="orange-bar"></span>
+   <h1 class="display-4 fw-extrabold mt-3 mb-0">{{ s.full_name }}</h1>
+   <h2 class="display-4 fw-extrabold text-primary-blue">{{ s.title }}</h2>
+   <p class="lead text-muted2 mt-3">{{ s.intro }}</p>
+   <div class="d-flex flex-wrap gap-3 my-4">
+    <a href="#projects" class="btn btn-blue"><i class="bi bi-arrow-right"></i> View My Projects</a>
+    <a href="#contact" class="btn btn-outline-blue"><i class="bi bi-envelope"></i> Contact Me</a>
+   </div>
+   <div class="d-flex gap-4 flex-wrap">
+    <a href="{{ s.github_url }}" class="social" target="_blank" rel="noopener"><i class="bi bi-github fs-2"></i><span>GitHub<br><small class="text-muted2">codewitherique</small></span></a>
+    <a href="{{ s.youtube_url }}" class="social" target="_blank" rel="noopener"><i class="bi bi-youtube fs-2"></i><span>YouTube<br><small class="text-muted2">codewitherique</small></span></a>
+   </div>
+  </div>
+  <div class="col-lg-6 text-center">
+   <div class="avatar-ring">
+    {% if s.profile_photo %}<img src="{{ s.profile_photo.url }}" alt="Portrait of {{ s.full_name }}">
+    {% else %}<i class="bi bi-person-fill"></i>{% endif %}
+   </div>
+  </div>
+ </div></div>
+</section>
+
+<section id="about" class="py-5 border-top-soft"><div class="container"><div class="row g-4 align-items-center">
+ <div class="col-lg-6">
+  <p class="section-eyebrow">ABOUT ME</p><h2 class="h3 fw-bold">Profile &amp; Summary</h2>
+  <p class="text-muted2">{{ s.summary }}</p>
+ </div>
+ <div class="col-lg-6"><div class="card-dark p-4">
+  <p><i class="bi bi-envelope text-primary-blue me-2"></i><strong>Email</strong> &nbsp; {{ s.email }}</p>
+  <p><i class="bi bi-geo-alt text-primary-blue me-2"></i><strong>Location</strong> &nbsp; {{ s.location }}</p>
+  <p class="mb-0"><i class="bi bi-briefcase text-primary-blue me-2"></i><strong>Focus</strong> &nbsp; {{ s.focus }}</p>
+ </div></div>
+</div></div></section>
+
+<section id="education" class="py-5 border-top-soft"><div class="container">
+ <h2 class="section-title">EDUCATION BACKGROUND</h2>
+ <div class="row g-3">
+  {% for e in education %}
+  <div class="col-md-6 col-lg"><div class="card-dark p-3 h-100">
+   <i class="bi {{ e.icon }} fs-3 text-primary-blue"></i>
+   <h3 class="h6 fw-bold mt-2">{{ e.title }}</h3>
+   <p class="small text-muted2">{{ e.institution }}</p>
+   <p class="text-primary-blue small fw-semibold">{{ e.period }}</p>
+   <p class="small mb-0"><span class="text-primary-blue">Award:</span> {{ e.award }}</p>
+  </div></div>
+  {% empty %}<p class="text-muted2">Education details coming soon.</p>{% endfor %}
+ </div>
+</div></section>
+
+<section id="skills" class="py-5 border-top-soft"><div class="container">
+ <h2 class="section-title">SKILLS &amp; TECHNOLOGIES</h2>
+ <div class="row g-3 row-cols-2 row-cols-sm-3 row-cols-lg-5">
+  {% for k in skills %}
+  <div class="col"><div class="card-dark text-center p-3 h-100">
+   <i class="bi {{ k.icon }} fs-2 text-primary-blue"></i><div class="small mt-2">{{ k.name }}</div>
+   {% if k.level %}<div class="tiny text-muted2">{{ k.level }}</div>{% endif %}
+  </div></div>
+  {% empty %}<p class="text-muted2">Skills coming soon.</p>{% endfor %}
+ </div>
+</div></section>
+
+<section id="projects" class="py-5 border-top-soft"><div class="container">
+ <h2 class="section-title">FEATURED PROJECTS</h2>
+ <div class="row g-4">
+  {% for p in projects %}
+  <div class="col-md-6 col-lg-4"><div class="card-dark h-100 p-3 d-flex flex-column">
+   {% if p.thumbnail %}<img src="{{ p.thumbnail.url }}" alt="{{ p.title }} screenshot" loading="lazy" class="rounded mb-3 w-100">
+   {% else %}<div class="thumb-ph mb-3"><i class="bi bi-window-stack"></i></div>{% endif %}
+   <small class="text-primary-blue">{{ p.category }}</small>
+   <h3 class="h6 fw-bold">{{ p.title }}</h3>
+   <p class="small text-muted2">{{ p.short_description }}</p>
+   <div class="d-flex flex-wrap gap-2 mt-auto">
+    {% for t in p.tech_list %}<span class="chip">{{ t }}</span>{% endfor %}
+   </div>
+   <a href="{% url 'project_detail' p.slug %}" class="small mt-3">View Project <i class="bi bi-arrow-right"></i></a>
+  </div></div>
+  {% empty %}<p class="text-muted2">Projects coming soon.</p>{% endfor %}
+ </div>
+</div></section>
+
+{% if s.show_referees %}
+<section id="referees" class="py-5 border-top-soft"><div class="container">
+ <h2 class="section-title">REFEREES</h2>
+ {% if referees %}
+ <div class="row g-3">
+  {% for r in referees %}
+  <div class="col-md-4"><div class="card-dark p-3">
+   <h3 class="h6 fw-bold">{{ r.full_name }}</h3>
+   <p class="small text-muted2 mb-1">{{ r.job_title }}, {{ r.organization }}</p>
+   {% if r.email %}<p class="small mb-0">{{ r.email }}</p>{% endif %}
+   {% if r.phone %}<p class="small mb-0">{{ r.phone }}</p>{% endif %}
+  </div></div>
+  {% endfor %}
+ </div>
+ {% else %}
+ <div class="d-flex align-items-center gap-3"><i class="bi bi-people-fill fs-1 text-primary-blue"></i>
+  <div><h3 class="h6 fw-bold mb-0">Available upon request</h3><p class="small text-muted2 mb-0">Professional references available upon request.</p></div></div>
+ {% endif %}
+</div></section>
+{% endif %}
+
+<section id="contact" class="py-5 border-top-soft contact-band"><div class="container"><div class="row g-4">
+ <div class="col-lg-5">
+  <h2 class="h3 fw-bold">Let's Work Together</h2>
+  <p class="text-muted2">Have a project in mind or just want to say hello? I'd love to hear from you.</p>
+  <p class="small"><i class="bi bi-envelope text-primary-blue me-2"></i>{{ s.email }}</p>
+  <p class="small"><i class="bi bi-geo-alt text-primary-blue me-2"></i>{{ s.location }}</p>
+  {% if s.whatsapp_url %}<p class="small"><a href="{{ s.whatsapp_url }}"><i class="bi bi-whatsapp me-2"></i>WhatsApp</a></p>{% endif %}
+ </div>
+ <div class="col-lg-7">
+  {% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}success{% endif %}">{{ m }}</div>{% endfor %}
+  <form method="post" action="{% url 'contact' %}" novalidate>
+   {% csrf_token %}{{ form.website }}
+   <div class="row g-3">
+    {% for f in form.visible_fields %}
+    <div class="{% if f.name == 'message' or f.name == 'subject' %}col-12{% else %}col-md-6{% endif %}">
+     <label class="form-label small" for="{{ f.id_for_label }}">{{ f.label }}</label>
+     {{ f }}
+     {% for e in f.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    {% endfor %}
+   </div>
+   <button class="btn btn-blue mt-3" type="submit">Send Message <i class="bi bi-send"></i></button>
+  </form>
+ </div>
+</div></div></section>
+{% endblock %}

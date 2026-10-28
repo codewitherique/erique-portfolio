@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="py-5"><div class="container">
+ <a href="/#projects" class="small">&larr; Back to projects</a>
+ <h1 class="h2 fw-bold mt-3">{{ p.title }}</h1>
+ {% if p.thumbnail %}<img src="{{ p.thumbnail.url }}" alt="{{ p.title }} screenshot" class="img-fluid rounded my-3">{% endif %}
+ <div class="text-muted2">{{ p.description|default:p.short_description|linebreaks }}</div>
+ <div class="d-flex flex-wrap gap-2 mb-3">{% for t in p.tech_list %}<span class="chip">{{ t }}</span>{% endfor %}</div>
+ {% if p.live_url %}<a class="btn btn-blue me-2" href="{{ p.live_url }}" rel="noopener" target="_blank">Live Demo</a>{% endif %}
+ {% if p.github_url %}<a class="btn btn-outline-blue" href="{{ p.github_url }}" rel="noopener" target="_blank">GitHub</a>{% endif %}
+</div></section>
+{% endblock %}
