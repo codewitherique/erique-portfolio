@@ -167,3 +167,26 @@ JAZZMIN_UI_TWEAKS = {
     "accent": "accent-primary",
     "dark_mode_theme": "darkly",
 }
+
+
+# Log Django errors to Render logs
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
