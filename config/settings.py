@@ -1,4 +1,7 @@
+import os
 from pathlib import Path
+
+import dj_database_url
 from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,18 +37,30 @@ TEMPLATES = [{
 }]
 WSGI_APPLICATION = "config.wsgi.application"
 
+# --- Database: local PostgreSQL by default, Render's DATABASE_URL when set ---
 DATABASES = {"default": {
     "ENGINE": "django.db.backends.postgresql",
-    "NAME": config("DB_NAME"), "USER": config("DB_USER"),
-    "PASSWORD": config("DB_PASSWORD"),
+    "NAME": config("DB_NAME", default=""),
+    "USER": config("DB_USER", default=""),
+    "PASSWORD": config("DB_PASSWORD", default=""),
     "HOST": config("DB_HOST", default="localhost"),
     "PORT": config("DB_PORT", default="5432"),
 }}
+DATABASE_URL = config("DATABASE_URL", default="")
+if DATABASE_URL:
+    DATABASES = {"default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
+
+# --- Render hostname ---
+RENDER_HOST = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_HOST:
+    ALLOWED_HOSTS.append(RENDER_HOST)
+    CSRF_TRUSTED_ORIGINS = [f"https://{RENDER_HOST}"]
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Africa/Dar_es_Salaam"
 USE_I18N = True
 USE_TZ = True
+
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
