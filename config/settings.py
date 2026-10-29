@@ -7,22 +7,22 @@ from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --------------------------------------------------
+# ==================================================
 # BASIC SETTINGS
-# --------------------------------------------------
+# ==================================================
 
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 IS_RENDER = bool(os.environ.get("RENDER"))
-RENDER_HOST = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+RENDER_HOST = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
 
 if IS_RENDER:
     DEBUG = False
 
-# --------------------------------------------------
+# ==================================================
 # HOSTS AND CSRF
-# --------------------------------------------------
+# ==================================================
 
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
@@ -30,19 +30,24 @@ ALLOWED_HOSTS = config(
     cast=Csv(),
 )
 
-if RENDER_HOST and RENDER_HOST not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(RENDER_HOST)
-
-CSRF_TRUSTED_ORIGINS = []
-
-if RENDER_HOST:
-    CSRF_TRUSTED_ORIGINS.append(
-        f"https://{RENDER_HOST}"
+if IS_RENDER:
+    ALLOWED_HOSTS.extend(
+        host for host in [RENDER_HOST, "erique-portfolio-2.onrender.com"]
+        if host and host not in ALLOWED_HOSTS
     )
 
-# --------------------------------------------------
+CSRF_TRUSTED_ORIGINS = [
+    "https://erique-portfolio-2.onrender.com",
+]
+
+if RENDER_HOST:
+    render_origin = f"https://{RENDER_HOST}"
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(render_origin)
+
+# ==================================================
 # APPLICATIONS
-# --------------------------------------------------
+# ==================================================
 
 INSTALLED_APPS = [
     "jazzmin",
@@ -57,9 +62,9 @@ INSTALLED_APPS = [
     "core",
 ]
 
-# --------------------------------------------------
+# ==================================================
 # MIDDLEWARE
-# --------------------------------------------------
+# ==================================================
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -74,9 +79,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "config.urls"
 
-# --------------------------------------------------
+# ==================================================
 # TEMPLATES
-# --------------------------------------------------
+# ==================================================
 
 TEMPLATES = [
     {
@@ -95,17 +100,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# --------------------------------------------------
+# ==================================================
 # DATABASE
-# --------------------------------------------------
+# ==================================================
 
 DATABASE_URL = config("DATABASE_URL", default="").strip()
 
 if IS_RENDER:
     if not DATABASE_URL:
         raise RuntimeError(
-            "DATABASE_URL is missing. Add the Render "
-            "Internal Database URL to Environment Variables."
+            "DATABASE_URL is missing from Render Environment Variables."
         )
 
     DATABASES = {
@@ -115,7 +119,6 @@ if IS_RENDER:
             ssl_require=True,
         )
     }
-
 elif DATABASE_URL:
     DATABASES = {
         "default": dj_database_url.parse(
@@ -123,7 +126,6 @@ elif DATABASE_URL:
             conn_max_age=600,
         )
     }
-
 else:
     DATABASES = {
         "default": {
@@ -137,9 +139,9 @@ else:
         }
     }
 
-# --------------------------------------------------
+# ==================================================
 # PASSWORD VALIDATION
-# --------------------------------------------------
+# ==================================================
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -163,14 +165,20 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": (
             "django.contrib.auth.password_validation."
+            "CommonPasswordValidator"
+        ),
+    },
+    {
+        "NAME": (
+            "django.contrib.auth.password_validation."
             "NumericPasswordValidator"
         ),
     },
 ]
 
-# --------------------------------------------------
+# ==================================================
 # LANGUAGE AND TIME
-# --------------------------------------------------
+# ==================================================
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Africa/Dar_es_Salaam"
@@ -179,9 +187,9 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# --------------------------------------------------
+# ==================================================
 # STATIC FILES
-# --------------------------------------------------
+# ==================================================
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
@@ -196,29 +204,26 @@ STORAGES = {
     },
 }
 
-# --------------------------------------------------
+# ==================================================
 # MEDIA FILES
-# --------------------------------------------------
+# ==================================================
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# --------------------------------------------------
+# ==================================================
 # CLOUDINARY
-# --------------------------------------------------
+# ==================================================
 
 CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": config(
-        "CLOUDINARY_CLOUD_NAME",
-        default="ae9okmvu",
-    ),
+    "CLOUD_NAME": config("CLOUDINARY_CLOUD_NAME", default=""),
     "API_KEY": config("CLOUDINARY_API_KEY", default=""),
     "API_SECRET": config("CLOUDINARY_API_SECRET", default=""),
 }
 
-# --------------------------------------------------
-# PRODUCTION SECURITY
-# --------------------------------------------------
+# ==================================================
+# SECURITY
+# ==================================================
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
@@ -238,9 +243,9 @@ if not DEBUG:
         SECURE_HSTS_INCLUDE_SUBDOMAINS = True
         SECURE_HSTS_PRELOAD = True
 
-# --------------------------------------------------
-# JAZZMIN ADMIN THEME
-# --------------------------------------------------
+# ==================================================
+# JAZZMIN ADMIN
+# ==================================================
 
 JAZZMIN_SETTINGS = {
     "site_title": "Erique Portfolio Administration",
@@ -275,9 +280,9 @@ JAZZMIN_UI_TWEAKS = {
     "accent": "accent-primary",
 }
 
-# --------------------------------------------------
+# ==================================================
 # LOGGING
-# --------------------------------------------------
+# ==================================================
 
 LOGGING = {
     "version": 1,
