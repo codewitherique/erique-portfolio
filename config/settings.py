@@ -14,16 +14,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-# Detect Render environment
 IS_RENDER = bool(os.environ.get("RENDER"))
 RENDER_HOST = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 
-# Never enable DEBUG in production
 if IS_RENDER:
     DEBUG = False
 
 # --------------------------------------------------
-# ALLOWED HOSTS
+# HOSTS AND CSRF
 # --------------------------------------------------
 
 ALLOWED_HOSTS = config(
@@ -38,7 +36,9 @@ if RENDER_HOST and RENDER_HOST not in ALLOWED_HOSTS:
 CSRF_TRUSTED_ORIGINS = []
 
 if RENDER_HOST:
-    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOST}")
+    CSRF_TRUSTED_ORIGINS.append(
+        f"https://{RENDER_HOST}"
+    )
 
 # --------------------------------------------------
 # APPLICATIONS
@@ -52,9 +52,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "core",
     "cloudinary_storage",
     "cloudinary",
+    "core",
 ]
 
 # --------------------------------------------------
@@ -97,8 +97,6 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # --------------------------------------------------
 # DATABASE
-# Render: use DATABASE_URL
-# Local: use DB_NAME, DB_USER, DB_PASSWORD, etc.
 # --------------------------------------------------
 
 DATABASE_URL = config("DATABASE_URL", default="").strip()
@@ -106,8 +104,8 @@ DATABASE_URL = config("DATABASE_URL", default="").strip()
 if IS_RENDER:
     if not DATABASE_URL:
         raise RuntimeError(
-            "DATABASE_URL is missing. Add the Internal Database URL "
-            "to your Render web service Environment Variables."
+            "DATABASE_URL is missing. Add the Render "
+            "Internal Database URL to Environment Variables."
         )
 
     DATABASES = {
@@ -119,7 +117,6 @@ if IS_RENDER:
     }
 
 elif DATABASE_URL:
-    # Optional: connect to a database using DATABASE_URL locally
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
@@ -128,7 +125,6 @@ elif DATABASE_URL:
     }
 
 else:
-    # Local PostgreSQL database
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -142,6 +138,37 @@ else:
     }
 
 # --------------------------------------------------
+# PASSWORD VALIDATION
+# --------------------------------------------------
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "UserAttributeSimilarityValidator"
+        ),
+    },
+    {
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "MinimumLengthValidator"
+        ),
+    },
+    {
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "CommonPasswordValidator"
+        ),
+    },
+    {
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "NumericPasswordValidator"
+        ),
+    },
+]
+
+# --------------------------------------------------
 # LANGUAGE AND TIME
 # --------------------------------------------------
 
@@ -149,6 +176,8 @@ LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Africa/Dar_es_Salaam"
 USE_I18N = True
 USE_TZ = True
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --------------------------------------------------
 # STATIC FILES
@@ -160,7 +189,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
         "BACKEND": (
@@ -170,13 +199,17 @@ STORAGES = {
 }
 
 # --------------------------------------------------
-# MEDIA FILES
+# CLOUDINARY
 # --------------------------------------------------
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": config(
+        "CLOUDINARY_CLOUD_NAME",
+        default="ae9okmvu",
+    ),
+    "API_KEY": config("CLOUDINARY_API_KEY", default=""),
+    "API_SECRET": config("CLOUDINARY_API_SECRET", default=""),
+}
 
 # --------------------------------------------------
 # PRODUCTION SECURITY
@@ -186,7 +219,10 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_PROXY_SSL_HEADER = (
+        "HTTP_X_FORWARDED_PROTO",
+        "https",
+    )
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
     if IS_RENDER:
