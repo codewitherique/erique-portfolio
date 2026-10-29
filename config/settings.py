@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 
+import cloudinary
 import dj_database_url
 from decouple import config, Csv
 
@@ -32,7 +33,10 @@ ALLOWED_HOSTS = config(
 
 if IS_RENDER:
     ALLOWED_HOSTS.extend(
-        host for host in [RENDER_HOST, "erique-portfolio-2.onrender.com"]
+        host for host in [
+            RENDER_HOST,
+            "erique-portfolio-2.onrender.com",
+        ]
         if host and host not in ALLOWED_HOSTS
     )
 
@@ -165,7 +169,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": (
             "django.contrib.auth.password_validation."
-            "CommonPasswordValidator"
+            "MinimumLengthValidator"
         ),
     },
     {
@@ -215,11 +219,53 @@ MEDIA_ROOT = BASE_DIR / "media"
 # CLOUDINARY
 # ==================================================
 
+CLOUDINARY_CLOUD_NAME = config(
+    "CLOUDINARY_CLOUD_NAME",
+    default="",
+).strip()
+
+CLOUDINARY_API_KEY = config(
+    "CLOUDINARY_API_KEY",
+    default="",
+).strip()
+
+CLOUDINARY_API_SECRET = config(
+    "CLOUDINARY_API_SECRET",
+    default="",
+).strip()
+
 CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": config("CLOUDINARY_CLOUD_NAME", default=""),
-    "API_KEY": config("CLOUDINARY_API_KEY", default=""),
-    "API_SECRET": config("CLOUDINARY_API_SECRET", default=""),
+    "CLOUD_NAME": CLOUDINARY_CLOUD_NAME,
+    "API_KEY": CLOUDINARY_API_KEY,
+    "API_SECRET": CLOUDINARY_API_SECRET,
 }
+
+# Explicitly configure the Cloudinary SDK
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
+    secure=True,
+)
+
+# Fail early on Render if credentials are missing.
+# Never print the API secret in logs.
+if IS_RENDER:
+    missing_cloudinary_settings = [
+        name
+        for name, value in [
+            ("CLOUDINARY_CLOUD_NAME", CLOUDINARY_CLOUD_NAME),
+            ("CLOUDINARY_API_KEY", CLOUDINARY_API_KEY),
+            ("CLOUDINARY_API_SECRET", CLOUDINARY_API_SECRET),
+        ]
+        if not value
+    ]
+
+    if missing_cloudinary_settings:
+        raise RuntimeError(
+            "Missing Render environment variables: "
+            + ", ".join(missing_cloudinary_settings)
+        )
 
 # ==================================================
 # SECURITY
